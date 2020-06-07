@@ -1,0 +1,11 @@
+{
+  "name": "message-reader",
+  "version": "0.1.0",
+  "description": "Message reader",
+  "main": "src",
+  "author": "Sergey Lunev",
+  "scripts": {
+    "test": "wasm-pack test --node",
+    "build": "wasm-pack build --target nodejs"
+  }
+}

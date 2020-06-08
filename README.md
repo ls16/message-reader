@@ -10,8 +10,8 @@
 [rust-install]: https://www.rust-lang.org/tools/install
 [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
 [wasm-pack]: https://rustwasm.github.io/wasm-pack/
-[example-calc]: examples/calc/README.md
-[example-http]: examples/http/README.md
+[example-calc]: https://github.com/ls16/message-reader/blob/master/examples/calc
+[example-http]: https://github.com/ls16/message-reader/blob/master/examples/http
 [net-server]: https://nodejs.org/api/net.html#net_class_net_server
 [tls-server]: https://nodejs.org/api/tls.html#tls_class_tls_server
 [net-server-listen-options]: https://nodejs.org/api/net.html#net_server_listen_options_callback

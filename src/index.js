@@ -38,10 +38,6 @@ function createConnectionListener(self, type, id, options, sock) {
   const timerIds = new Map();
   const parseTimeout = options.parseTimeout != null ? options.parseTimeout * 1000 : null;
 
-  const onBeforeParse = instData.proto.onBeforeParse;
-  const onAfterParse = instData.proto.onAfterParse;
-  const onTknData = instData.proto.onTknData;
-
   function timeOutHandler(ctx) {
     ctx.socket && ctx.socket.emit('__parse_init__');
     self.emit('error', {
@@ -50,30 +46,47 @@ function createConnectionListener(self, type, id, options, sock) {
     });
   }
 
-  instData.proto.onBeforeParse = function() {
-    (typeof(onBeforeParse) == 'function') && onBeforeParse.call(this);
-    // set timer
-    (parseTimeout != null) && timerIds.set(this, setTimeout(timeOutHandler, parseTimeout, this));
-  };
-  instData.proto.onAfterParse = function() {
-    // clear parseTimeout
-    if (parseTimeout != null) {
-      clearTimeout(timerIds.get(this));
-      timerIds.delete(this);
-    }
-    (typeof(onAfterParse) == 'function') && onAfterParse.call(this);
-    // exec middlewares
-    execMiddlewares(this);
-  };
-  
+  instData.execOptions.forEach((opt) => {
+    const onBeforeParse = opt.proto.onBeforeParse;
+    const onAfterParse = opt.proto.onAfterParse;
+
+    opt.onBeforeParse = function() {
+      (typeof(onBeforeParse) == 'function') && onBeforeParse.call(this);
+      // set timer
+      (parseTimeout != null) && timerIds.set(this, setTimeout(timeOutHandler, parseTimeout, this));
+    };
+    opt.onAfterParse = function() {
+      // clear parseTimeout
+      if (parseTimeout != null) {
+        clearTimeout(timerIds.get(this));
+        timerIds.delete(this);
+      }
+      (typeof(onAfterParse) == 'function') && onAfterParse.call(this);
+      // exec middlewares
+      execMiddlewares(this);
+    };
+  });
+
   return (socket) => {
-    let executor = type == 'server' ? instData.master.clone_executor() : instData.master;
+    let optionsIndex = 0;
+    let executor;
+
+    function setOptions(index) {
+      optionsIndex = index;
+      executor = type == 'server'
+        ? instData.execOptions[optionsIndex].master.clone_executor()
+        : instData.execOptions[optionsIndex].master;
+    }
+
+    setOptions(0);
     if (type == 'client') socket = sock;
 
     socket.on('data', (data) => {
       try {
-        executor.parse_data(data, instData.proto, 'socket', socket,
-        instData.proto.onBeforeParse, instData.proto.onAfterParse, onTknData);
+        executor.parse_data(data, instData.execOptions[optionsIndex].proto, 'socket', socket,
+        instData.execOptions[optionsIndex].onBeforeParse,
+        instData.execOptions[optionsIndex].onAfterParse,
+        instData.execOptions[optionsIndex].proto.onTknData);
       } catch (err) {
         executor.parse_init();
         self.emit('error', {
@@ -86,7 +99,13 @@ function createConnectionListener(self, type, id, options, sock) {
     socket.on('__parse_init__', () => {
       executor.parse_init();
     });
-  
+
+    socket.on('__set_options_index__', (index) => {
+      if (index >= 0 && index < instData.execOptions.length) {
+        setOptions(index);
+      }
+    });
+
     socket.on('error', (evt) => {
     });
   
@@ -106,31 +125,50 @@ class Base extends EventEmitter {
 
   /**
    * Creates an instance.
-   * @param {ConstructorOptions} options
+   * @param {ConstructorOptions | Array<ConstructorOptions>} options
    */
   constructor(options) {
     super();
 
-    const executor = options && options.executor;
-    assert(executor, '"executor" option is required');
+    const execOptions = [];
+    if (Array.isArray(options)) {
+      if (options.length == 0) throw new Error('Options length must not be zero');
+      options.forEach((opt) => {
+        const executor = opt.executor;
+        assert(executor, '"executor" option is required');
+        const proto = opt.proto || {};
+        execOptions.push({
+          master: executor,
+          proto
+        })
+      });
+    } else {
+      const executor = options && options.executor;
+      assert(executor, '"executor" option is required');
+      const proto = options.proto || {};
+      execOptions.push({
+        master: executor,
+        proto
+      })
+    }
 
     const id = getId();
 
     this._id = () => id;
 
-    const proto = options.proto || {};
-
     instancesData[id] = {
-      master: executor,
-      proto,
+      execOptions,
       middlewares: []
     };
   }
 
   free() {
     const id = this._id();
-    instancesData[id].master && instancesData[id].master.free();
-    instancesData[id] = null;
+    const execOptions = instancesData[id].execOptions;
+    execOptions.forEach((opt) => {
+      opt.master && opt.master.free();
+    });
+    instancesData[id].execOptions = [];
   }
 
   /**
@@ -198,30 +236,31 @@ class Client extends Base {
 
 /**
  * Creates and return an instance of Server or Client.
- * @param {BuilderOptions} options
+ * @param {BuilderOptions | Array<BuilderOptions>} options
  * @param {String} [type] - type of instance: 'server' or 'client', default is 'server'
  * @return {Server | Client}
  */
 function build(options, type = 'server') {
-  const regexp = options && options.regexp;
-  assert(regexp, '"regexp" option must be set');
-  const grammar = options && options.grammar;
-  assert(grammar, '"grammar" option must be set');
-  const proto = options && options.proto;
-
-  const executor = Executor.build(regexp, grammar);
+  if (!Array.isArray(options)) options = [options];
+  const execOptions = [];
+  options.forEach((opt) => {
+    const regexp = opt.regexp;
+    assert(regexp, '"regexp" option must be set');
+    const grammar = opt.grammar;
+    assert(grammar, '"grammar" option must be set');
+    const proto = opt.proto;
+    const executor = Executor.build(regexp, grammar);
+    execOptions.push({
+      executor,
+      proto
+    });
+  });
 
   let instance;
   if (type == 'server') {
-    instance = new Server({
-      executor,
-      proto
-    });
+    instance = new Server(execOptions);
   } else if (type == 'client') {
-    instance = new Client({
-      executor,
-      proto
-    });
+    instance = new Client(execOptions);
   } else {
     throw new Error(`Unknown type: ${type}`);
   }

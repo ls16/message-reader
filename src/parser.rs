@@ -165,6 +165,10 @@ impl Parser {
   }
 
   pub fn parse(&mut self, exec_context: &JsValue) -> Result<ParseResult, JsValue> {
+    let e_term = GrammarSymbol::e_term();
+    let w_term = GrammarSymbol::w_term();
+    let rust_action_name = &hash("rust_action");
+    let action_name = &hash("action");
 
     macro_rules! get_symbol {
       ($exec_context: ident) => {
@@ -172,19 +176,21 @@ impl Parser {
           let mut res: Option<GrammarSymbol> = None;
           if self.nexts.len() > 0 {
             let next = &self.nexts[0];
+            let mut is_equal_last_name = false;
             if let Some(ref last_name) = next.last_name {
-              if next.name() == *last_name {
-                if next.size.is_some() {
-                  self.lex.set_read_size(next.insert_name().unwrap(), next.size.unwrap());
-                } else {
-                  let symbol = match next.insert_name() {
-                    Some(insert_name) => GrammarSymbol::term(*insert_name, next.insert_value().clone()),
-                    _ => GrammarSymbol::s_term()
-                  };
-                  res = Some(symbol);
-                }
-                self.nexts.remove(0);
+              is_equal_last_name = next.name() == *last_name;
+            }
+            if next.name() == e_term.name() || is_equal_last_name {
+              if next.size.is_some() {
+                self.lex.set_read_size(next.insert_name().unwrap(), next.size.unwrap());
+              } else {
+                let symbol = match next.insert_name() {
+                  Some(insert_name) => GrammarSymbol::term(*insert_name, next.insert_value().clone()),
+                  _ => GrammarSymbol::s_term()
+                };
+                res = Some(symbol);
               }
+              self.nexts.remove(0);
             }
           }
 
@@ -228,11 +234,6 @@ impl Parser {
     fn err() -> Result<ParseResult, JsValue> {
       Err(JsValue::from("Error parse"))
     }
-
-    let e_term = GrammarSymbol::e_term();
-    let w_term = GrammarSymbol::w_term();
-    let rust_action_name = &hash("rust_action");
-    let action_name = &hash("action");
 
     let mut stack: Vec<StackItem>;
     let mut cur_symbol;

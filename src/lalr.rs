@@ -171,7 +171,7 @@ impl GotoStatesOpt {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ActionState {
   Shift,
   Reduce,
@@ -588,6 +588,13 @@ impl GrammarBuilder {
 
 }
 
+#[derive(Debug, PartialEq)]
+enum Conflict {
+  ShiftShift,
+  ShiftReduce,
+  ReduceReduce
+}
+
 #[derive(Debug)]
 pub struct LALRBuilder {
 }
@@ -711,44 +718,101 @@ impl LALRBuilder {
   pub fn build_action_states<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Result<ActionStatesOpt, String> {
     let lalr = LALRBuilder::build_lalr(grammar, goto_states);
     let mut action_states = ActionStates::new();
+    let mut conflicts: Vec<(Conflict, Option<Rc<GrammarProduction>>, Rc<GrammarProduction>, usize)> = Vec::new();
+
+    let mut push_if_not_exists = |item: (Conflict, Option<Rc<GrammarProduction>>, Rc<GrammarProduction>, usize)| {
+      if !conflicts.iter().any(|i| i.0 == item.0 && i.1 == item.1 && i.2 == item.2 && i.3 == item.3) {
+        conflicts.push(item);
+      }
+    };
 
     for i in 0..lalr.len() {
       let items = &lalr[i];
       for i1 in 0..items.len() {
         let item = items.item(i1);
-        let mut count = 0;
         if item.position < item.production.len() {
           let symbol = item.production.symbol(item.position);
           if symbol.is_term() {
             let j = goto_states.state(i, symbol.name());
             if j.is_some() {
               let j = *j.unwrap();
+              let state = action_states.state(&i, &symbol.name());
+              if state.is_some() {
+                let state = state.unwrap();
+                if state.state() != &ActionState::Shift {
+                  push_if_not_exists((Conflict::ShiftReduce,
+                    state.production().clone(), item.production.clone(), symbol.name()));
+                } else if state.goto() != &Some(j) {
+                  push_if_not_exists((Conflict::ShiftShift,
+                    state.production().clone(), item.production.clone(), symbol.name()));
+                }
+              }
+
               action_states.set_state(i, symbol.name(),
                 ActionState2::new(ActionState::Shift, Some(j), None));
-              count += 1;
             }
           }
         }
 
         if item.position > 0 && item.position == item.production.len() &&
           item.production.name() != grammar.production(0).name() {
-            action_states.set_state(i, item.term_name.clone().unwrap(),
+            let term_name = item.term_name.clone().unwrap();
+            let state = action_states.state(&i, &term_name);
+            if state.is_some() {
+              let state = state.unwrap();
+              if state.state() == &ActionState::Shift {
+                push_if_not_exists((Conflict::ShiftReduce,
+                  state.production().clone(), item.production.clone(), term_name));
+              } else if state.production() != &Some(item.production.clone()) {
+                push_if_not_exists((Conflict::ReduceReduce,
+                  state.production().clone(), item.production.clone(), term_name));
+              }
+            }
+
+            action_states.set_state(i, term_name,
               ActionState2::new(ActionState::Reduce, None, Some(item.production.clone())));
-            count += 1;
         }
 
         let s_term_name = GrammarSymbol::s_term().name();
         if item.position > 0 && item.position == item.production.len() &&
           item.production.as_ref() == grammar.production(0) &&
           item.term_name.clone().unwrap() == s_term_name {
+            let state = action_states.state(&i, &s_term_name);
+            if state.is_some() {
+              let state = state.unwrap();
+              if state.state() == &ActionState::Shift {
+                push_if_not_exists((Conflict::ShiftReduce,
+                  state.production().clone(), item.production.clone(), s_term_name));
+              } else if state.production() != &Some(item.production.clone()) {
+                push_if_not_exists((Conflict::ReduceReduce,
+                  state.production().clone(), item.production.clone(), s_term_name));
+              }
+            }
+
             action_states.set_state(i, s_term_name,
               ActionState2::new(ActionState::Accept, None, Some(item.production.clone())));
-            count += 1;
         }
-
-        if count > 1 {return Err("Grammar is not LALR!".to_string())};
       }
     }
+
+    if conflicts.len() > 0 {
+      if cfg!(debug_assertions) {
+        for i in 0..conflicts.len() {
+          let conflict = &conflicts[i];
+          let msg = match conflict.1 {
+            Some(ref prod) =>
+              format!("Grammar conflict {:?}, production1: {}, production2: {}, symbol: {:?}",
+                conflict.0, prod, conflict.2, get_original_name(conflict.3)),
+            _ =>
+              format!("Grammar conflict {:?}, production1: {}, production2: {}, symbol: {:?}",
+                conflict.0, "", conflict.2, get_original_name(conflict.3)),
+          };
+          log(&msg);
+        }
+        log(format!("conflicts count: {}", conflicts.len()).as_str());
+      }
+      return Err("Grammar is not LALR!".to_string())
+    };
 
     Ok(ActionStatesOpt::from(&action_states))
   }

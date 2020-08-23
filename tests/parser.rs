@@ -7,6 +7,18 @@ use server::dfa_grammar::*;
 mod fixtures;
 
 #[wasm_bindgen_test]
+fn test_lalr1() {
+  let lex = Lex::new("".to_string());
+  let mut parser = Parser::new(Box::new(lex));
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar1());
+  assert_eq!(result.is_err(), true, "Invalid build of parser");
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar2());
+  assert_eq!(result.is_err(), true, "Invalid build of parser");
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar3());
+  assert_eq!(result.is_err(), true, "Invalid build of parser");
+}
+
+#[wasm_bindgen_test]
 fn test_parse() {
   let ctx = ExecContext::new();
   let js_ctx = cast_exec_context_to_js_value(0, ctx);

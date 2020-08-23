@@ -555,6 +555,29 @@ pub struct GrammarProduction {
   attrs: Attributes
 }
 
+impl fmt::Display for GrammarProduction {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let prod_name = match get_original_name(self.name) {
+      Some(name) => name,
+      _ => "".to_string()
+    };
+    let _ = write!(f, "{}:", prod_name);
+    for i in 0..self.symbols.len() {
+      let symbol = &self.symbols[i];
+      let sym_name = match get_original_name(symbol.name()) {
+        Some(name) => name,
+        _ => "".to_string()
+      };
+      let sym_name = match symbol.is_term() {
+        true => format!("'{}'", sym_name),
+        false => sym_name
+      };
+      let _ = write!(f, " {}", sym_name);
+    }
+    Ok(())
+  }
+}
+
 impl PartialEq for GrammarProduction {
     fn eq(&self, other: &GrammarProduction) -> bool {
         if self.name != other.name {return false};

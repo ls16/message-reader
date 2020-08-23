@@ -134,7 +134,7 @@ impl Parser {
   pub fn set_grammar(&mut self, grammar: String) -> Result<(), String> {
     let grammar = GrammarBuilder::from_text(grammar).unwrap();
     let goto_states = LALRBuilder::build_goto_states(&grammar);
-    let action_states = LALRBuilder::build_action_states(&grammar, &goto_states).unwrap();
+    let action_states = LALRBuilder::build_action_states(&grammar, &goto_states)?;
 
     self.grammar = Rc::new(grammar);
     self.goto_states = Rc::new(goto_states);

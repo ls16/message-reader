@@ -35,3 +35,30 @@ pub fn grammar() -> String {
     F: '(' E ')' | 'id' | 'number';
   ".to_string()
 }
+
+#[allow(dead_code)]
+pub fn not_lalr1_grammar1() -> String {
+  "
+    S1: stmt;
+    stmt: 'if' e 'then' stmt;
+    stmt: 'if' e 'then' stmt 'else' stmt;
+  ".to_string()
+}
+
+#[allow(dead_code)]
+pub fn not_lalr1_grammar2() -> String {
+  "
+    S1: E;
+    E: E '+' E | E '*' E;
+  ".to_string()
+}
+
+#[allow(dead_code)]
+pub fn not_lalr1_grammar3() -> String {
+  "
+    S1: S;
+    S: A 'a' | 'b' A 'c' | B 'c' | 'b' B 'a';
+    A: 'd';
+    B: 'd';
+  ".to_string()
+}

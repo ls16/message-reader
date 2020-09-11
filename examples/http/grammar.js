@@ -21,16 +21,16 @@ let regexp = `
   '-' \\x2D
   '.' \\x2E
   '/' \\x2F
-  '0' \\x30
-  '1' \\x31
-  '2' \\x32
-  '3' \\x33
-  '4' \\x34
-  '5' \\x35
-  '6' \\x36
-  '7' \\x37
-  '8' \\x38
-  '9' \\x39
+  '0' \\x30 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '1' \\x31 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '2' \\x32 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '3' \\x33 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '4' \\x34 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '5' \\x35 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '6' \\x36 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '7' \\x37 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '8' \\x38 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '9' \\x39 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
   ':' \\x3A
   ';' \\x3B
   '<' \\x3C
@@ -38,31 +38,31 @@ let regexp = `
   '>' \\x3E
   '?' \\x3F
   '@' \\x40
-  A_F [\\x41-\\x46]
-  G \\x47
-  H \\x48
-  I_O [\\x49-\\x4F]
-  P \\x50
-  Q_S [\\x51-\\x53]
-  T \\x54
-  U_Z [\\x55-\\x5A]
+  A_F [\\x41-\\x46] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  G \\x47 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  H \\x48 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  I_O [\\x49-\\x4F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  P \\x50 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  Q_S [\\x51-\\x53] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  T \\x54 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  U_Z [\\x55-\\x5A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
   '[' \\x5B
   '\\' \\x5C
   ']' \\x5D
   '^' \\x5E
   '_' \\x5F
   ga \\x60
-  a_f [\\x61-\\x66]
-  g \\x67
-  h \\x68
-  i_o [\\x69-\\x6F]
-  p \\x70
-  q_r [\\x71-\\x72]
-  s \\x73
-  t \\x74
-  u \\x75
-  v \\x76
-  w_z [\\x77-\\x7A]
+  a_f [\\x61-\\x66] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  g \\x67 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  h \\x68 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  i_o [\\x69-\\x6F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  p \\x70 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  q_r [\\x71-\\x72] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  s \\x73 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  t \\x74 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  u \\x75 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  v \\x76 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  w_z [\\x77-\\x7A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
   '{' \\x7B
   '|' \\x7C
   '}' \\x7D
@@ -83,13 +83,12 @@ let grammar = `
 
   http_name: 'H' 'T' 'T' 'P';
 
-  http_version: http_name '/' 'digit' '.' 'digit' {this.readHttpVersion(get(2), get(0))};
+  http_version: http_name '/' digit '.' digit {this.readHttpVersion(get(2), get(0))};
 
   absolute_form: absolute_uri [set(0)];
   absolute_path: absolute_path_1 absolute_path [set(1, 0)];
   absolute_path: absolute_path_1 [set(0)];
   absolute_path_1: '/' segment [set(1, 0)];
-  asterisk_form: '*' [set(0)];
   authority_form: authority [set(0)];
 
   chunk: chunk_size chunk_ext crlf chunk_data crlf;
@@ -119,7 +118,7 @@ let grammar = `
   field_name: token [set(0)];
   field_value: field_value field_value_1 [set(1, 0)];
   field_value: ;
-  field_value_1: field_vchar | obs_fold | 'sp' | 'ht' [set(0)];
+  field_value_1: field_vchar | 'sp' | 'ht' [set(0)];
   field_vchar: vchar | obs_text [set(0)];
 
   header_field_crlf: field_name ':' field_value crlf {this.request.headers[Buffer.from(get(3)).toString().toLowerCase()] = Buffer.from(get(1)).toString().trim()};
@@ -130,10 +129,6 @@ let grammar = `
   message_body: 'message_body_1';
   method: token {this.request.method = Buffer.from(get(0)).toString()};
 
-  obs_fold: crlf obs_fold_1 [set(0)];
-  obs_fold_1: obs_fold_1_1 obs_fold_1 [set(1, 0)];
-  obs_fold_1: obs_fold_1_1 [set(0)];
-  obs_fold_1_1: 'sp' | 'ht' [set(0)];
   origin_form: absolute_path '?' query [set(2, 1, 0)];
   origin_form: absolute_path [set(0)];
 
@@ -153,8 +148,9 @@ let grammar = `
   quoted_string_1: ;
   quoted_string_1_1: qdtext | quoted_pair [set(0)];
 
-  request_line: method 'sp' request_target 'sp' http_version crlf;
-  request_target: origin_form | absolute_form | authority_form | asterisk_form {this.request.url = Buffer.from(get(0)).toString()};
+  request_line: request_line_1 request_target 'sp' http_version crlf;
+  request_line_1: method 'sp' {this.requestTargetReading = true};
+  request_target: origin_form | absolute_form | authority_form | asterisk_form {this.requestTargetReading = false; this.request.url = Buffer.from(get(0)).toString()};
 
   start_line: request_line;
 
@@ -165,14 +161,14 @@ let grammar = `
   trailer_part: ;
   trailer_part_1: header_field_crlf;
 
-  digit: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' [set(0)];
   hex: 'A_F' | 'a_f' | digit [set(0)];
+  digit: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' [set(0)];
   alpha: 'A_F' | 'G' | 'H' | 'I_O' | 'P' | 'Q_S' | 'T' | 'U_Z' | 'a_f' | 'g' | 'h' | 'i_o' | 'p' | 'q_r' | 's' | 't' | 'u' | 'v' | 'w_z' [set(0)];
   char21_27: '!' | '"' | '#' | '$' | '%' | '&' | '\'' [set(0)];
   char23_5B: '#' | '$' | '%' | '&' | '\'' | '(' | ')' | char2A_5B [set(0)];
   char2A_5B: '*' | '+' | ',' | '-' | '.' | '/' | digit | ':' | ';' | '<' | '=' | '>' | '?' | '@' | 'A_F' | 'G' | 'H' | 'I_O' | 'P' | 'Q_S' | 'T' | 'U_Z' | '[' [set(0)];
   char5D_7E: ']' | '^' | '_' | 'ga' | 'a_f' | 'g' | 'h' | 'i_o' | 'p' | 'q_r' | 's' | 't' | 'u' | 'v' | 'w_z' | '{' | '|' | '}' | '~' [set(0)];
-  vchar: char21_27 | char23_5B | '\\' | char5D_7E [set(0)];
+  vchar: '!' | '"' | '#' | '$' | '%' | '&' | '\'' | '#' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | digit | ':' | ';' | '<' | '=' | '>' | '?' | '@' | 'A_F' | 'G' | 'H' | 'I_O' | 'P' | 'Q_S' | 'T' | 'U_Z' | '[' | '\\' | ']' | '^' | '_' | 'ga' | 'a_f' | 'g' | 'h' | 'i_o' | 'p' | 'q_r' | 's' | 't' | 'u' | 'v' | 'w_z' | '{' | '|' | '}' | '~' [set(0)];
   crlf: 'cr' 'lf';
 
 
@@ -183,91 +179,54 @@ let grammar = `
   relative_part: path_noscheme [set(0)];
   relative_part: path_empty [set(0)];
   scheme: alpha scheme_1 [set(1, 0)];
-  scheme_1: scheme_1 scheme_1_1 [set(1, 0)];
+  scheme_1: scheme_1 scheme_char [set(1, 0)];
   scheme_1: ;
-  scheme_char: alpha | digit | '+' | '-' | '.' [set(0)];
+  scheme_char: 'alpha_1' | 'digit_1' | '+' | '-' | '.' [set(0)];
   hier_part: '/' '/' authority path_abempty [set(3, 2, 1, 0)];
   hier_part: path_absolute | path_rootless | path_empty [set(0)];
-  authority: userinfo '@' host ':' port [set(4, 3, 2, 1, 0)];
-  authority: host [set(4, 3, 2, 1, 0)];
-  userinfo: userinfo userinfo_1 [set(1, 0)];
-  userinfo: ;
+  authority: host authority_1 [set(1, 0)];
+  authority_1: ':' port [set(1, 0)];
+  authority_1: ;
   userinfo_1: unreserved | pct_encoded | sub_delims | ':' [set(0)];
   host: ip_literal | ip_v4address | reg_name [set(0)];
-  port: port digit [set(1, 0)];
+  port: port 'digit_1' [set(1, 0)];
   port: ;
-  ip_literal: '[' ip_literal_1 ']' [set(2, 1, 0)];
-  ip_literal_1: ip_v6address | ip_vfuture [set(0)];
+  ip_literal: ip_literal_1 '[' ip_literal_2 ']' [set(2, 1, 0)];
+  ip_literal_1: {this.ipLiteralReading = true};
+  ip_literal_2: ip_v6address | ip_vfuture {this.ipLiteralReading = false; set(0)};
   ip_vfuture: 'v' ip_vfuture_1 '.' ip_vfuture_2 [set(3, 2, 1, 0)];
-  ip_vfuture_1: hex ip_vfuture_1 [set(1, 0)];
-  ip_vfuture_1: hex [set(0)];
+  ip_vfuture_1: 'hexdig' ip_vfuture_1 [set(1, 0)];
+  ip_vfuture_1: 'hexdig' [set(0)];
   ip_vfuture_2: ip_vfuture_2_1 ip_vfuture_2 [set(1, 0)];
   ip_vfuture_2_1: unreserved | sub_delims | ':' [set(0)];
-  ip_v6address: ip_v6address_1 | ip_v6address_2 | ip_v6address_3 | ip_v6address_4 | ip_v6address_5 | ip_v6address_6 | ip_v6address_7 | ip_v6address_8 | ip_v6address_9 [set(0)];
-  ip_v6address_1: h16_ext h16_ext h16_ext h16_ext h16_ext h16_ext ls32 {set_val(Buffer.concat([get(6), get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_2: ':' ':' h16_ext h16_ext h16_ext h16_ext h16_ext ls32 {set_val(Buffer.concat([get(7), get(6), get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_3: ip_v6address_3_1 ':' ':' h16_ext h16_ext h16_ext h16_ext ls32 {set_val(Buffer.concat([get(7), get(6), get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_3_1: h16 [set(0)];
-  ip_v6address_3_1: ;
-  ip_v6address_4: ip_v6address_4_1 ':' ':' h16_ext h16_ext h16_ext ls32 {set_val(Buffer.concat([get(6), get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_4_1: ip_v6address_4_1_1 h16 [set(1, 0)];
-  ip_v6address_4_1: ;
-  ip_v6address_4_1_1: h16_ext [set(0)];
-  ip_v6address_4_1_1: ;
-  ip_v6address_5: ip_v6address_5_1 ':' ':' h16_ext h16_ext ls32 {set_val(Buffer.concat([get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_5_1: ip_v6address_5_1_1 h16 [set(1, 0)];
-  ip_v6address_5_1: ;
-  ip_v6address_5_1_1: h16_ext h16_ext [set(1, 0)];
-  ip_v6address_5_1_1: h16_ext [set(0)];
-  ip_v6address_5_1_1: ;
-  ip_v6address_6: ip_v6address_6_1 ':' ':' h16_ext ls32 [set(4, 3, 2, 1, 0)];
-  ip_v6address_6_1: ip_v6address_6_1_1 h16 [set(1, 0)];
-  ip_v6address_6_1: ;
-  ip_v6address_6_1_1: h16_ext h16_ext h16_ext [set(2, 1, 0)];
-  ip_v6address_6_1_1: h16_ext h16_ext [set(1, 0)];
-  ip_v6address_6_1_1: h16_ext [set(0)];
-  ip_v6address_6_1_1: ;
-  ip_v6address_7: ip_v6address_7_1 ':' ':' ls32 [set(3, 2, 1, 0)];
-  ip_v6address_7_1: ip_v6address_7_1_1 h16 [set(1, 0)];
-  ip_v6address_7_1: ;
-  ip_v6address_7_1_1: h16_ext h16_ext h16_ext h16_ext [set(3, 2, 1, 0)];
-  ip_v6address_7_1_1: h16_ext h16_ext h16_ext [set(2, 1, 0)];
-  ip_v6address_7_1_1: h16_ext h16_ext [set(1, 0)];
-  ip_v6address_7_1_1: h16_ext [set(0)];
-  ip_v6address_7_1_1: ;
-  ip_v6address_8: ip_v6address_8_1 ':' ':' h16 [set(3, 2, 1, 0)];
-  ip_v6address_8_1: ip_v6address_8_1_1 h16 [set(1, 0)];
-  ip_v6address_8_1: ;
-  ip_v6address_8_1_1: h16_ext h16_ext h16_ext h16_ext h16_ext [set(4, 3, 2, 1, 0)];
-  ip_v6address_8_1_1: h16_ext h16_ext h16_ext h16_ext [set(3, 2, 1, 0)];
-  ip_v6address_8_1_1: h16_ext h16_ext h16_ext [set(2, 1, 0)];
-  ip_v6address_8_1_1: h16_ext h16_ext [set(1, 0)];
-  ip_v6address_8_1_1: h16_ext [set(0)];
-  ip_v6address_8_1_1: ;
-  ip_v6address_9: ip_v6address_9_1 ':' ':' [set(2, 1, 0)];
-  ip_v6address_9_1: ip_v6address_9_1_1 h16 [set(1, 0)];
-  ip_v6address_9_1: ;
-  ip_v6address_9_1_1: h16_ext h16_ext h16_ext h16_ext h16_ext h16_ext {set_val(Buffer.concat([get(5), get(4), get(3), get(2), get(1), get(0)]))};
-  ip_v6address_9_1_1: h16_ext h16_ext h16_ext h16_ext h16_ext [set(4, 3, 2, 1, 0)];
-  ip_v6address_9_1_1: h16_ext h16_ext h16_ext h16_ext [set(3, 2, 1, 0)];
-  ip_v6address_9_1_1: h16_ext h16_ext h16_ext [set(2, 1, 0)];
-  ip_v6address_9_1_1: h16_ext h16_ext [set(1, 0)];
-  ip_v6address_9_1_1: h16_ext [set(0)];
-  ip_v6address_9_1_1: ;
-  h16_ext: h16 ':' [set(1, 0)];
-  h16: hex hex hex hex [set(3, 2, 1, 0)];
-  h16: hex hex hex [set(2, 1, 0)];
-  h16: hex hex [set(1, 0)];
-  h16: hex [set(0)];
+  ip_v6address: ip_v6address_1 [set(0)];
+  ip_v6address_1: ip_v6_part2 ls32  {if (this.loopCountPart2 != 6) throw new Error('Invalid IP V6 addr'); set_val(Buffer.concat([get(1), get(0)]))};
+  ip_v6address_1: ':' ':' ip_v6_part2 ls32 {if (this.loopCountPart2 != 5) throw new Error('Invalid IP V6 addr'); set_val(Buffer.concat([get(3), get(2), get(1), get(0)]))};
+  ip_v6address_1: ip_v6_part1 ':' ':' ip_v6_part2 ls32 {this.checkIPV6(); set_val(Buffer.concat([get(4), get(3), get(2), get(1), get(0)]))};
+  ip_v6address_1: ':' ':' ls32 [set(2, 1, 0)];
+  ip_v6address_1: ip_v6_part1 ':' ':' ls32 {if (this.loopCountPart1 > 5) throw new Error('Invalid IP V6 addr'); set_val(Buffer.concat([get(2), get(1), get(0)]))};
+  ip_v6address_1: ':' ':' h16 [set(2, 1, 0)];
+  ip_v6address_1: ip_v6_part1 ':' ':' h16 {if (this.loopCountPart1 > 5) throw new Error('Invalid IP V6 addr'); set_val(Buffer.concat([get(2), get(1), get(0)]))};
+  ip_v6address_1: ':' ':' [set(1, 0)];
+  ip_v6address_1: ip_v6_part1 ':' ':' {if (this.loopCountPart1 > 6) throw new Error('Invalid IP V6 addr'); set_val(Buffer.concat([get(2), get(1), get(0)]))};
+  ip_v6_part2: h16_colon_loop2 {this.loopCountPart2 = this.loopCount; set(0)};
+  ip_v6_part1: h16_colon_loop1 h16 {this.loopCountPart1 = this.loopCount; set_val(Buffer.concat([get(1), get(0)]))};
+  h16_colon_loop1: h16_colon_loop1_1 {this.loopCountPart1 != null && set_name('h16_colon_loop2')};
+  h16_colon_loop1_1: h16 ':' h16_colon_loop1_1 {this.loopCount += 1; set_val(Buffer.concat([get(2), get(1), get(0)]))};
+  h16_colon_loop1_1:  {this.loopCount = 0};
   ls32: ls32_1 | ip_v4address [set(0)];
-  ls32_1: h16_ext h16 [set(1, 0)];
-  ip_v4address: dec_octet_ext dec_octet_ext dec_octet_ext dec_octet [set(3, 2, 1, 0)];
-  dec_octet_ext: dec_octet ':' [set(1, 0)];
-  dec_octet: '1' digit digit [set(2, 10)];
-  dec_octet: '2' dec_octet_1 digit [set(2, 1, 0)];
-  dec_octet_1: '0' | '1' | '2' | '3' | '4' [set(0)];
-  dec_octet: '2' '5' dec_octet_2 digit [set(3, 2, 1, 0)];
-  dec_octet_2: '0' | '1' | '2' | '3' | '4' | '5' [set(0)];
+  ls32_1: h16 ls32_1_1 [set(1, 0)];
+  ls32_1_1: ':' h16 [set(1, 0)];
+  h16: 'hexdig' 'hexdig' 'hexdig' 'hexdig' [set(3, 2, 1, 0)];
+  h16: 'hexdig' 'hexdig' 'hexdig' [set(2, 1, 0)];
+  h16: 'hexdig' 'hexdig' [set(1, 0)];
+  h16: 'hexdig' [set(0)];
+  ip_v4address: dec_octet_ext dec_octet_ext dec_octet_ext dec_octet_ext [set(3, 2, 1, 0)];
+  dec_octet_ext: dec_octet '.' [set(1, 0)];
+  dec_octet: 'digit_1' {this.checkDecOctet(get, 1); set(0)};
+  dec_octet: 'digit_1' 'digit_1' {this.checkDecOctet(get, 1); set_val(Buffer.concat([get(1), get(0)]))};
+  dec_octet: 'digit_1' 'digit_1' 'digit_1' {this.checkDecOctet(get, 1); set_val(Buffer.concat([get(2), get(1), get(0)]))};
+
   reg_name: reg_name reg_name_1 [set(1, 0)];
   reg_name: ;
   reg_name_1: unreserved | pct_encoded | sub_delims [set(0)];
@@ -283,9 +242,9 @@ let grammar = `
   segments_1: '/' segment [set(1, 0)];
   segment: segment pchar [set(1, 0)];
   segment: ;
-  segment_nz: pchar segment_nz [set(1, 0)];
+  segment_nz: segment_nz pchar [set(1, 0)];
   segment_nz: pchar [set(0)];
-  segment_nz_nc: segment_nz_nc_1 segment_nz_nc [set(1, 0)];
+  segment_nz_nc: segment_nz_nc segment_nz_nc_1 [set(1, 0)];
   segment_nz_nc: segment_nz_nc_1 [set(0)];
   segment_nz_nc_1: unreserved | pct_encoded | sub_delims | '@' [set(0)];
   pchar: unreserved | pct_encoded | sub_delims | ':' | '@' [set(0)];
@@ -296,16 +255,23 @@ let grammar = `
   fragment: fragment fragment_1 [set(1, 0)];
   fragment: ;
   fragment_1: pchar | '/' | '?' [set(0)];
-  pct_encoded: '%' hex hex [set(2, 1, 0)];
-  unreserved: alpha | digit | '-' | '.' | '_' | '~' [set(0)];
+  pct_encoded: '%' hex1 hex1 [set(2, 1, 0)];
+  hex1: 'alpha_1' | 'digit_1' {this.checkHex(get(0)[0]); set(0)};
+  unreserved: 'alpha_1' | 'digit_1' | '-' | '.' | '_' | '~' [set(0)];
   reserved: gen_delims | sub_delims [set(0)];
-  gen_delims: ':' | '/' | '?' | '#' | '[' | ']' | '@';
+  gen_delims: ':' | '/' | '?' | '#' | '[' | ']' | '@' [set(0)];
   sub_delims: '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '=' [set(0)];
 `;
 
 function initRequest() {
   this.request = {};
   this.request.headers = {};
+
+  this.loopCount = null;
+  this.loopCountPart1 = null;
+  this.loopCountPart2 = null;
+  this.requestTargetReading = false;
+  this.ipLiteralReading = false;
 }
 
 function doTknData(tknName, tknData, end) {
@@ -354,6 +320,75 @@ function isLastChunkSize(data) {
   return true;
 }
 
+function correctToken(get, set_name) {
+  if (!this.ipLiteralReading && !this.requestTargetReading) return;
+
+  const code = get()[0];
+  if (code >= 0x30 && code <= 0x39) {
+    this.ipLiteralReading ? set_name('hexdig') : set_name('digit_1');
+  } else if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A)) {
+    if (this.ipLiteralReading) {
+      if ((code >= 0x41 && code <= 0x46) || (code >= 0x61 && code <= 0x66)) {
+        set_name('hexdig');
+      } else {
+        set_name('alpha_1');
+      }
+    } else {
+      set_name('alpha_1');
+    }
+  }
+}
+
+function checkIPV6() {
+  if (this.loopCountPart1 == 0 && this.loopCountPart2 == 4) return;
+  if (this.loopCountPart1 <= 1 && this.loopCountPart2 == 3) return;
+  if (this.loopCountPart1 <= 2 && this.loopCountPart2 == 2) return;
+  if (this.loopCountPart1 <= 3 && this.loopCountPart2 == 1) return;
+  throw new Error('Invalid IP V6 addr');
+}
+
+function checkDecOctet(get, len) {
+  let valid = false;
+  let digit0;
+  let digit1;
+  let digit2;
+
+  switch (len) {
+    case 1:
+      valid = get(0) <= 0x39;
+      break;
+    case 2:
+      digit1 = get(1);
+      digit0 = get(0);
+      valid = 
+        (digit1 >= 0x31 && digit1 <= 0x39) &&
+        (digit0 >= 0x30 && digit0 <= 0x39);
+      break;
+    case 3:
+      digit2 = get(2);
+      digit1 = get(1);
+      digit0 = get(0);
+      if (digit2 == 0x31) {
+        valid = 
+        (digit1 >= 0x30 && digit1 <= 0x39) &&
+        (digit0 >= 0x30 && digit0 <= 0x39);
+      } else if (digit2 == 0x32) {
+        if (digit1 >= 0x30 && digit1 <= 0x34) {
+          valid = (digit0 >= 0x30 && digit0 <= 0x39);
+        } else if (digit1 == 0x35) {
+          valid = (digit0 >= 0x30 && digit0 <= 0x35);
+        }
+      }
+      break;
+    }
+  if (!valid) throw new Error('Invalid decimal digit');
+}
+
+function checkHex(code) {
+  const valid = (code >= 0x30 && code <= 0x39) || (code >= 0x41 && code <= 0x46) || (code >= 0x61 && code <= 0x66);
+  if (!valid) throw new Error('Invalid hex digit');
+}
+
 module.exports = {
   regexp,
   grammar,
@@ -362,5 +397,9 @@ module.exports = {
   readHttpVersion,
   readBody,
   readChunk,
-  isLastChunkSize
+  isLastChunkSize,
+  correctToken,
+  checkIPV6,
+  checkDecOctet,
+  checkHex
 };

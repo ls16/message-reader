@@ -159,6 +159,7 @@ impl LexBase for Lex {
           let tkn_name = tkn_name.unwrap();
           let tkn_value = tkn_value.unwrap();
           let mut tkn_name_changed: Option<usize> = None;
+          let mut tkn_name_changed1: Option<usize> = None;
           let mut tkn_value_changed: Option<Vec<u8>> = None;
           self.cur_position += tkn_value.len();
           let action = self.rules[pos.unwrap()].action();
@@ -175,16 +176,23 @@ impl LexBase for Lex {
             let mut set_name = |name: String| {
               tkn_name_changed = Some(hash(&name));
             };
-  
+
+            let mut set_name_from_hash = |hash_name: usize| {
+              tkn_name_changed1 = Some(hash_name);
+            };
+
             let mut pass = || {
               is_pass = true;
             };
   
-            let _ = do_lex_action(&func, exec_context, &get, &mut set, &mut set_name, &mut pass);
+            let _ = do_lex_action(&func, exec_context, &get, &mut set, &mut set_name, &mut set_name_from_hash, &mut pass);
   
-            let tkn_name = match tkn_name_changed {
-              Some(tkn_name_changed) => tkn_name_changed,
-              _ => tkn_name
+            let tkn_name = match tkn_name_changed1 {
+              Some(tkn_name_changed1) => tkn_name_changed1,
+              _ => match tkn_name_changed {
+                Some(tkn_name_changed) => tkn_name_changed,
+                _ => tkn_name
+              }
             };
   
             let tkn_value = match tkn_value_changed {
@@ -272,7 +280,7 @@ impl Lex {
       }
       let rule = LexRuleIntl::new(expression,
         match result {
-          Some(action) => Some(Function::new_with_args("get, set, set_name, pass", action.as_str())),
+          Some(action) => Some(Function::new_with_args("get, set, set_name, set_name_from_hash, pass", action.as_str())),
           None => None
         }, define, rules.len());
       rules.insert(name, rule);
@@ -334,6 +342,6 @@ impl Lex {
 extern "C" {
   #[wasm_bindgen(catch)]
   pub fn do_lex_action(action: &Function, context: &JsValue,
-    get: &dyn Fn() -> Vec<u8>, set: &mut dyn FnMut(Vec<u8>), set_name: &mut dyn FnMut(String), pass: &mut dyn FnMut()
+    get: &dyn Fn() -> Vec<u8>, set: &mut dyn FnMut(Vec<u8>), set_name: &mut dyn FnMut(String), set_name_from_hash: &mut dyn FnMut(usize), pass: &mut dyn FnMut()
   ) -> Result<(), JsValue>;
 }

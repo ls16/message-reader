@@ -2,7 +2,7 @@ const assert = require('assert');
 const Net = require('net');
 const Tls = require('tls');
 const EventEmitter = require('events');
-const {Executor} = require('../pkg/server');
+const {Executor, hash} = require('../pkg/server');
 
 let id = 1;
 
@@ -268,4 +268,7 @@ function build(options, type = 'server') {
   return instance;
 }
 
-exports.build = build;
+module.exports = {
+  build,
+  hash
+}

@@ -303,6 +303,7 @@ impl Parser {
           if let Some(action_prod) = action.production() {
             let mut new_symbol = GrammarSymbol::non_term(action_prod.name(), None);
             let mut new_symbol_name: Option<usize> = None;
+            let mut new_symbol_name1: Option<usize> = None;
             let mut new_symbol_val: Option<Vec<u8>> = None;
             let mut bind_id: Option<usize> = None;
             let mut nexts: Option<Vec<Next>> = None;
@@ -420,6 +421,10 @@ impl Parser {
                     new_symbol_name = Some(hash(&name));
                   };
 
+                  let mut set_name_from_hash = |hash_name: usize| {
+                    new_symbol_name1 = Some(hash_name);
+                  };
+
                   let mut push_after = |name: String, insert_name: Option<String>,
                     insert_value: Option<Vec<u8>>, size: Option<usize>, stop_code: Option<u8>| {
                     let insert_name = match insert_name {
@@ -442,13 +447,15 @@ impl Parser {
                     }
                   };
 
-                  do_parser_action(&func, exec_context, &mut bind, &id, &get, &mut set, &mut set_val, &mut set_name, &mut push_after)?;
+                  do_parser_action(&func, exec_context, &mut bind, &id, &get, &mut set, &mut set_val, &mut set_name, &mut set_name_from_hash, &mut push_after)?;
 
                   if new_symbol_val.is_some() {
                     new_symbol.set_value(new_symbol_val);
                   }
 
-                  if new_symbol_name.is_some() {
+                  if new_symbol_name1.is_some() {
+                    new_symbol.set_name(new_symbol_name1.unwrap());
+                  } else if new_symbol_name.is_some() {
                     new_symbol.set_name(new_symbol_name.unwrap());
                   }
 
@@ -493,7 +500,7 @@ extern "C" {
   #[wasm_bindgen(catch)]
   fn do_parser_action(action: &Function, context: &JsValue, bind: &mut dyn FnMut(usize), id: &dyn Fn(usize) -> Option<usize>,
     get: &dyn Fn(usize) -> Option<Vec<u8>>, set: &mut dyn FnMut(usize), set_val: &mut dyn FnMut(Vec<u8>),
-    set_name: &mut dyn FnMut(String),
+    set_name: &mut dyn FnMut(String), set_name_from_hash: &mut dyn FnMut(usize),
     push_after: &mut dyn FnMut(String, Option<String>, Option<Vec<u8>>, Option<usize>, Option<u8>)
   ) -> Result<(), JsValue>;
 }

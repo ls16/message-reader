@@ -300,6 +300,7 @@ impl LexBase for StreamLex {
       if tkn_name.is_some() {
         let tkn_name = tkn_name.unwrap();
         let mut tkn_name_changed: Option<usize> = None;
+        let mut tkn_name_changed1: Option<usize> = None;
         let mut tkn_value_changed: Option<Vec<u8>> = None;
         if let Some(ref func) = action {
 
@@ -315,15 +316,22 @@ impl LexBase for StreamLex {
             tkn_name_changed = Some(hash(&name));
           };
 
+          let mut set_name_from_hash = |hash_name: usize| {
+            tkn_name_changed1 = Some(hash_name);
+          };
+
           let mut pass = || {
             is_pass = true;
           };
 
-          do_lex_action(&func, exec_context, &get, &mut set, &mut set_name, &mut pass)?;
+          do_lex_action(&func, exec_context, &get, &mut set, &mut set_name, &mut set_name_from_hash, &mut pass)?;
   
-          let tkn_name = match tkn_name_changed {
-            Some(tkn_name_changed) => tkn_name_changed,
-            _ => tkn_name
+          let tkn_name = match tkn_name_changed1 {
+            Some(tkn_name_changed1) => tkn_name_changed1,
+            _ => match tkn_name_changed {
+              Some(tkn_name_changed) => tkn_name_changed,
+              _ => tkn_name
+            }
           };
 
           let tkn_value = match tkn_value_changed {

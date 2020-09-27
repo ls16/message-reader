@@ -1,3 +1,9 @@
+const {hash} = require('../../src');
+
+const hexdig = hash('hexdig');
+const alpha_1 = hash('alpha_1');
+const digit_1 = hash('digit_1');
+
 let regexp = `
   ctl1 \\x00|[\\x01-\\x08]
   ht \\x09
@@ -21,16 +27,16 @@ let regexp = `
   '-' \\x2D
   '.' \\x2E
   '/' \\x2F
-  '0' \\x30 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '1' \\x31 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '2' \\x32 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '3' \\x33 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '4' \\x34 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '5' \\x35 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '6' \\x36 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '7' \\x37 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '8' \\x38 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  '9' \\x39 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  '0' \\x30 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '1' \\x31 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '2' \\x32 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '3' \\x33 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '4' \\x34 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '5' \\x35 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '6' \\x36 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '7' \\x37 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '8' \\x38 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  '9' \\x39 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
   ':' \\x3A
   ';' \\x3B
   '<' \\x3C
@@ -38,31 +44,31 @@ let regexp = `
   '>' \\x3E
   '?' \\x3F
   '@' \\x40
-  A_F [\\x41-\\x46] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  G \\x47 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  H \\x48 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  I_O [\\x49-\\x4F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  P \\x50 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  Q_S [\\x51-\\x53] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  T \\x54 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  U_Z [\\x55-\\x5A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  A_F [\\x41-\\x46] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  G \\x47 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  H \\x48 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  I_O [\\x49-\\x4F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  P \\x50 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  Q_S [\\x51-\\x53] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  T \\x54 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  U_Z [\\x55-\\x5A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
   '[' \\x5B
   '\\' \\x5C
   ']' \\x5D
   '^' \\x5E
   '_' \\x5F
   ga \\x60
-  a_f [\\x61-\\x66] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  g \\x67 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  h \\x68 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  i_o [\\x69-\\x6F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  p \\x70 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  q_r [\\x71-\\x72] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  s \\x73 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  t \\x74 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  u \\x75 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  v \\x76 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
-  w_z [\\x77-\\x7A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name)}
+  a_f [\\x61-\\x66] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  g \\x67 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  h \\x68 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  i_o [\\x69-\\x6F] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  p \\x70 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  q_r [\\x71-\\x72] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  s \\x73 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  t \\x74 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  u \\x75 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  v \\x76 {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
+  w_z [\\x77-\\x7A] {(this.ipLiteralReading || this.requestTargetReading) && this.correctToken(get, set_name_from_hash)}
   '{' \\x7B
   '|' \\x7C
   '}' \\x7D
@@ -320,21 +326,21 @@ function isLastChunkSize(data) {
   return true;
 }
 
-function correctToken(get, set_name) {
+function correctToken(get, set_name_from_hash) {
   if (!this.ipLiteralReading && !this.requestTargetReading) return;
 
   const code = get()[0];
   if (code >= 0x30 && code <= 0x39) {
-    this.ipLiteralReading ? set_name('hexdig') : set_name('digit_1');
+    this.ipLiteralReading ? set_name_from_hash(hexdig) : set_name_from_hash(digit_1);
   } else if ((code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A)) {
     if (this.ipLiteralReading) {
       if ((code >= 0x41 && code <= 0x46) || (code >= 0x61 && code <= 0x66)) {
-        set_name('hexdig');
+        set_name_from_hash(hexdig);
       } else {
-        set_name('alpha_1');
+        set_name_from_hash(alpha_1);
       }
     } else {
-      set_name('alpha_1');
+      set_name_from_hash(alpha_1);
     }
   }
 }

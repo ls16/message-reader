@@ -162,6 +162,22 @@ class Base extends EventEmitter {
     };
   }
 
+  /**
+   * Clones an instance.
+   */
+  clone() {
+    const id = this._id();
+    const execOptions = instancesData[id].execOptions;
+    const clonedExecOptions = execOptions.map((option) => {
+      return {
+        executor: option.master.clone_executor(),
+        proto: option.proto
+      };
+    });
+
+    return new this.constructor(clonedExecOptions);
+  }
+
   free() {
     const id = this._id();
     const execOptions = instancesData[id].execOptions;

@@ -4,7 +4,7 @@ const hexdig = hash('hexdig');
 const alpha_1 = hash('alpha_1');
 const digit_1 = hash('digit_1');
 
-let regexp = `
+const regexp = `
   ctl1 \\x00|[\\x01-\\x08]
   ht \\x09
   lf \\x0A
@@ -77,7 +77,7 @@ let regexp = `
   obs_text [\\x80-\\xFF]
 `;
 
-let grammar = `
+const grammar = (isRequest) => `
   start: http_message;
 
   http_message: start_line_headers crlf message_body;
@@ -119,13 +119,13 @@ let grammar = `
   comment_1: comment_1 comment_1_1 [set(1, 0)];
   comment_1: ;
   comment_1_1: ctext | quoted_pair | comment [set(0)];
-  ctext: 'ht' | 'sp' | char21_27 | char2A_5B | char5D_7E | obs_text [set(0)];
+  ctext: 'ht' | 'sp' | char21_27 | char2A_5B | char5D_7E | 'obs_text' [set(0)];
 
   field_name: token [set(0)];
   field_value: field_value field_value_1 [set(1, 0)];
   field_value: ;
   field_value_1: field_vchar | 'sp' | 'ht' [set(0)];
-  field_vchar: vchar | obs_text [set(0)];
+  field_vchar: vchar | 'obs_text' [set(0)];
 
   header_field_crlf: field_name ':' field_value crlf {this.request.headers[Buffer.from(get(3)).toString().toLowerCase()] = Buffer.from(get(1)).toString().trim()};
 
@@ -146,9 +146,9 @@ let grammar = `
   protocol_version: token [set(0)];
   pseudonym: token [set(0)];
 
-  qdtext: 'ht' | 'sp' | '!' | char23_5B | char5D_7E | obs_text [set(0)];
+  qdtext: 'ht' | 'sp' | '!' | char23_5B | char5D_7E | 'obs_text' [set(0)];
   quoted_pair:  '\\' quoted_pair_1 [set(1, 0)];
-  quoted_pair_1: 'ht' | 'sp' | vchar | obs_text [set(0)];
+  quoted_pair_1: 'ht' | 'sp' | vchar | 'obs_text' [set(0)];
   quoted_string: '"' quoted_string_1 '"' [set(2, 1, 0)];
   quoted_string_1: quoted_string_1 quoted_string_1_1 [set(1, 0)];
   quoted_string_1: ;
@@ -158,7 +158,13 @@ let grammar = `
   request_line_1: method 'sp' {this.requestTargetReading = true};
   request_target: origin_form | absolute_form | authority_form | asterisk_form {this.requestTargetReading = false; this.request.url = Buffer.from(get(0)).toString()};
 
-  start_line: request_line;
+  start_line: ${isRequest == true ? 'request_line' : 'status_line'};
+  status_line: http_version 'sp' status_code 'sp' reason_phrase crlf;
+  status_code: digit digit digit {this.status = +(Buffer.concat([get(2), get(1), get(0)]).toString())};
+  reason_phrase: reason_phrase_1 {this.reason = Buffer.from(get(0)).toString()};
+  reason_phrase_1: reason_phrase_1 reason_phrase_1_1 [set(1, 0)];
+  reason_phrase_1: ;
+  reason_phrase_1_1: 'ht' | 'sp' | vchar | 'obs_text' [set(0)];
 
   tchar: '!' | '#' | '$' | '%' | '&' | '\'' | '*' | '+' | '-' | '.' | '^' | '_' | 'ga' | '|' | '~' | digit | alpha [set(0)];
   token: token tchar [set(1, 0)];
@@ -268,6 +274,10 @@ let grammar = `
   gen_delims: ':' | '/' | '?' | '#' | '[' | ']' | '@' [set(0)];
   sub_delims: '!' | '$' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '=' [set(0)];
 `;
+
+const requestGrammar = grammar(true);
+
+const responseGrammar = grammar(false);
 
 function initRequest() {
   this.request = {};
@@ -397,7 +407,8 @@ function checkHex(code) {
 
 module.exports = {
   regexp,
-  grammar,
+  requestGrammar,
+  responseGrammar,
   onBeforeParse: initRequest,
   onTknData: doTknData,
   readHttpVersion,

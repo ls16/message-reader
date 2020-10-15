@@ -4,7 +4,7 @@ const {build} = require('../../src');
 function buildHttp() {
   return build({
     regexp: grammar.regexp,
-    grammar: grammar.grammar,
+    grammar: grammar.requestGrammar,
     proto: grammar
   })
 };

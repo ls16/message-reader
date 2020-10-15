@@ -528,7 +528,7 @@ impl GrammarBuilder {
             }
             state = BuildState::EndAction;
           } else if tkn.name() == hash("action_code") {
-            let func = Function::new_with_args("bind, id, get, set, set_val, set_name, set_name_from_hash, push_after", &tkn.value_to_string());
+            let func = Function::new_with_args("bind, id, lookup, get, set, set_val, set_name, set_name_from_hash, push_after", &tkn.value_to_string());
             production.add_attr(hash("action"), Box::new(func.clone()));
             for i in &production_block {
               grammar.production_mut(*i).add_attr(hash("action"), Box::new(func.clone()));
@@ -556,7 +556,7 @@ impl GrammarBuilder {
             }
             state = BuildState::EndAction;
           } else if tkn.name() == hash("action_code") {
-            let func = Function::new_with_args("bind, id, get, set, set_val, set_name, set_name_from_hash, push_after", &tkn.value_to_string());
+            let func = Function::new_with_args("bind, id, lookup, get, set, set_val, set_name, set_name_from_hash, push_after", &tkn.value_to_string());
             production.add_attr(hash("action"), Box::new(func.clone()));
             for i in &production_block {
               grammar.production_mut(*i).add_attr(hash("action"), Box::new(func.clone()));

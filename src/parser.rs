@@ -387,6 +387,10 @@ impl Parser {
                     }
                   };
 
+                  let lookup = || -> Option<Vec<u8>> {
+                    cur_symbol.value().clone()
+                  };
+
                   let get = |index: usize| -> Option<Vec<u8>> {
                     match stack.get(stack.len() - 1 - index) {
                       Some(item) => {
@@ -447,7 +451,7 @@ impl Parser {
                     }
                   };
 
-                  do_parser_action(&func, exec_context, &mut bind, &id, &get, &mut set, &mut set_val, &mut set_name, &mut set_name_from_hash, &mut push_after)?;
+                  do_parser_action(&func, exec_context, &mut bind, &id, &lookup, &get, &mut set, &mut set_val, &mut set_name, &mut set_name_from_hash, &mut push_after)?;
 
                   if new_symbol_val.is_some() {
                     new_symbol.set_value(new_symbol_val);
@@ -499,7 +503,8 @@ impl Parser {
 extern "C" {
   #[wasm_bindgen(catch)]
   fn do_parser_action(action: &Function, context: &JsValue, bind: &mut dyn FnMut(usize), id: &dyn Fn(usize) -> Option<usize>,
-    get: &dyn Fn(usize) -> Option<Vec<u8>>, set: &mut dyn FnMut(usize), set_val: &mut dyn FnMut(Vec<u8>),
+    lookup: &dyn Fn() -> Option<Vec<u8>>, get: &dyn Fn(usize) -> Option<Vec<u8>>,
+    set: &mut dyn FnMut(usize), set_val: &mut dyn FnMut(Vec<u8>),
     set_name: &mut dyn FnMut(String), set_name_from_hash: &mut dyn FnMut(usize),
     push_after: &mut dyn FnMut(String, Option<String>, Option<Vec<u8>>, Option<usize>, Option<u8>)
   ) -> Result<(), JsValue>;

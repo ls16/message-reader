@@ -3,6 +3,14 @@ const Net = require('net');
 const Tls = require('tls');
 const {Executor, hash} = require('../pkg/server');
 
+const INIT = 0;
+const LISTENING_START = 1;
+const LISTENING = 2;
+const CONNECTING = 3;
+const CONNECTED = 4;
+const CLOSING = 5;
+const CLOSED = 6;
+
 let id = 1;
 
 const getId = () => id++;
@@ -197,13 +205,21 @@ class Base {
     return new this.constructor(clonedExecOptions);
   }
 
+  /**
+   * @inner
+   */
   free() {
     const id = this._id();
     const execOptions = instancesData[id].execOptions;
     execOptions.forEach((opt) => {
-      opt.master && opt.master.free();
+      opt.master && opt.ptr && opt.master.free();
     });
     instancesData[id].execOptions = [];
+    delete instancesData[id];
+  }
+
+  close() {
+    throw new Error('Not implemented');
   }
 
   /**
@@ -254,6 +270,26 @@ class Base {
   }
 }
 
+function changeServerState(id, newState) {
+  const instData = instancesData[id];
+  const errMessage = 'Can\'t change state';
+  switch (newState) {
+    case LISTENING_START:
+      if (instData.state != INIT) throw new Error(errMessage);
+      break;
+    case LISTENING:
+      if (instData.state != LISTENING_START) throw new Error(errMessage);
+      break;
+    case CLOSING:
+      if (instData.state != LISTENING) throw new Error(errMessage);
+      break;
+    case CLOSED:
+      if (instData.state != CLOSING) throw new Error(errMessage);
+      break;
+  }
+  instData.state = newState;
+}
+
 class Server extends Base {
   listen(options) {
     const createOptions = {};
@@ -270,12 +306,57 @@ class Server extends Base {
 
     const type = 'server';
     const id = this._id();
+    const instData = instancesData[id];
     const connectionListener = createConnectionListener(this, type, id, options);
     const internal = module.createServer(createOptions, connectionListener);
-
     internal.maxConnections = 100;
-    internal.listen(options);
+
+    changeServerState(id, LISTENING_START);
+
+    internal.listen(options, () => {
+      changeServerState(id, LISTENING);
+      instData.data.internal = internal;
+      if (instData.handlers.listening != null) {
+        execHandler(instData.handlers.listening, this, []);
+      }
+    });
+    internal.on('close', () => {
+      changeServerState(id, CLOSED);
+      this.free();
+      instData.data.internal = null;
+      if (instData.handlers.close != null) {
+        execHandler(instData.handlers.close, this, []);
+      }
+    });
   }
+
+  close() {
+    const id = this._id();
+    changeServerState(id, CLOSING);
+    const instData = instancesData[id];
+    const internal = instData.data.internal;
+    internal.close();
+  }
+}
+
+function changeClientState(id, newState) {
+  const instData = instancesData[id];
+  const errMessage = 'Can\'t change state';
+  switch (newState) {
+    case CONNECTING:
+      if (instData.state != INIT) throw new Error(errMessage);
+      break;
+    case CONNECTED:
+      if (instData.state != CONNECTING) throw new Error(errMessage);
+      break;
+    case CLOSING:
+      if (instData.state != CONNECTED) throw new Error(errMessage);
+      break;
+    case CLOSED:
+      if (instData.state != CONNECTED && instData.state != CLOSING) throw new Error(errMessage);
+      break;
+  }
+  instData.state = newState;
 }
 
 class Client extends Base {
@@ -283,10 +364,28 @@ class Client extends Base {
     const module = options.tls === true ? Tls : Net;
     const type = 'client';
     const id = this._id();
+    const instData = instancesData[id];
+    changeClientState(id, CONNECTING);
     const socket = module.connect(options);
     const connectionListener = createConnectionListener(this, type, id, options, socket);
-    socket.on('connect', connectionListener);
+    socket.on('connect', (socket) => {
+      changeClientState(id, CONNECTED);
+      connectionListener(socket);
+    });
+    socket.on('close', () => {
+      changeClientState(id, CLOSED);
+      this.free();
+    });
+    instData.data.internal = socket;
     return socket;
+  }
+
+  close() {
+    const id = this._id();
+    changeClientState(id, CLOSING);
+    const instData = instancesData[id];
+    const internal = instData.data.internal;
+    internal.end();
   }
 }
 

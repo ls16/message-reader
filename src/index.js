@@ -1,7 +1,6 @@
 const assert = require('assert');
 const Net = require('net');
 const Tls = require('tls');
-const EventEmitter = require('events');
 const {Executor, hash} = require('../pkg/server');
 
 let id = 1;
@@ -32,6 +31,13 @@ function compose(id) {
   };
 }
 
+function execHandler(handler, self, params) {
+  try {
+    return handler.apply(self, params);
+  }
+  catch (err) {}
+}
+
 function createConnectionListener(self, type, id, options, sock) {
   const execMiddlewares = compose(id);
   const instData = instancesData[id];
@@ -39,11 +45,7 @@ function createConnectionListener(self, type, id, options, sock) {
   const parseTimeout = options.parseTimeout != null ? options.parseTimeout * 1000 : null;
 
   function timeOutHandler(ctx) {
-    ctx.socket && ctx.socket.emit('__parse_init__');
-    self.emit('error', {
-      error: 'Timeout',
-      ctx
-    });
+    ctx.connection.socket && ctx.connection.socket.destroy(new Error('Timeout'));
   }
 
   instData.execOptions.forEach((opt) => {
@@ -71,7 +73,12 @@ function createConnectionListener(self, type, id, options, sock) {
     let optionsIndex = 0;
     let executor;
 
+    function parseInit() {
+      executor.parse_init();
+    }
+
     function setOptions(index) {
+      if (index < 0 || index >= instData.execOptions.length) return;
       optionsIndex = index;
       executor = type == 'server'
         ? instData.execOptions[optionsIndex].master.clone_executor()
@@ -81,42 +88,51 @@ function createConnectionListener(self, type, id, options, sock) {
     setOptions(0);
     if (type == 'client') socket = sock;
 
+    let connection = {
+      socket,
+      parseInit,
+      setOptions
+    };
+
+    if (instData.handlers.connection != null) {
+      const result = execHandler(instData.handlers.connection, null, [socket]);
+      if (result != null) {
+        connection = {
+          ...result,
+          socket,
+          parseInit,
+          setOptions
+        };
+      }
+    }
+
     socket.on('data', (data) => {
       try {
-        executor.parse_data(data, instData.execOptions[optionsIndex].proto, 'socket', socket,
+        executor.parse_data(data, instData.execOptions[optionsIndex].proto, 'connection', connection,
         instData.execOptions[optionsIndex].onBeforeParse,
         instData.execOptions[optionsIndex].onAfterParse,
         instData.execOptions[optionsIndex].proto.onTknData);
       } catch (err) {
         executor.parse_init();
-        self.emit('error', {
-          error: err,
-          socket
-        });
+        execHandler(instData.handlers.errorConnection, connection, [connection, err]);
       }
     });
   
-    socket.on('__parse_init__', () => {
-      executor.parse_init();
-    });
-
-    socket.on('__set_options_index__', (index) => {
-      if (index >= 0 && index < instData.execOptions.length) {
-        setOptions(index);
-      }
-    });
-
-    socket.on('error', (evt) => {
+    socket.on('error', (err) => {
+      execHandler(instData.handlers.errorConnection, connection, [connection, err]);
     });
   
-    socket.on('close', () => {
+    socket.on('close', (hadError) => {
       executor.free();
       executor = null;
+      if (instData.handlers.closeConnection != null) {
+        execHandler(instData.handlers.closeConnection, connection, [connection, hadError]);
+      }
     });
   };
 }
 
-class Base extends EventEmitter {
+class Base {
   /**
    * @typedef {Object} ConstructorOptions
    * @param {Executor} executor
@@ -128,8 +144,6 @@ class Base extends EventEmitter {
    * @param {ConstructorOptions | Array<ConstructorOptions>} options
    */
   constructor(options) {
-    super();
-
     const execOptions = [];
     if (Array.isArray(options)) {
       if (options.length == 0) throw new Error('Options length must not be zero');
@@ -158,7 +172,12 @@ class Base extends EventEmitter {
 
     instancesData[id] = {
       execOptions,
-      middlewares: []
+      middlewares: [],
+      handlers: {
+        errorConnection: this.onError
+      },
+      state: INIT,
+      data: {}
     };
   }
 
@@ -190,8 +209,36 @@ class Base extends EventEmitter {
   /**
    * Default error handler
    */
-  onError(evt) {
-    console.log(evt.error);
+  onError(conn, err) {
+    console.log(err.toString());
+  }
+
+  /**
+   * Sets event handler
+   * @param {String} name
+   * @param {Function} cb
+   */
+  handler(name, cb) {
+    const instData = instancesData[this._id()];
+    let handlerNames = [
+      'connection',
+      'errorConnection',
+      'closeConnection'
+    ];
+    if (this instanceof Server) {
+      handlerNames = handlerNames.concat([
+        'listening',
+        'error',
+        'close'
+      ]);
+    }
+    if (handlerNames.indexOf(name) == -1) {
+      throw new Error(`Invalid handler name ${name}`);
+    }
+
+    instData.handlers[name] = cb;
+
+    return this;
   }
 
   /**

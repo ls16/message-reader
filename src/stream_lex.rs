@@ -215,7 +215,7 @@ impl LexBase for StreamLex {
             let push_tkn_name = JsValue::from(push_tkn_name.unwrap() as u32);
             let push_tkn_data = unsafe {Uint8Array::view(&push_tkn_data_buffer)};
             let end = JsValue::from(true);
-            let _ = on_tkn_data.call3(exec_context, &push_tkn_name, &push_tkn_data, &end);
+            let _ = on_tkn_data.call3(exec_context, &push_tkn_name, &push_tkn_data, &end)?;
           }
           push_tkn_data_buffer.clear();
           return Ok(Some(Token::new(push_tkn_name.unwrap(), vec!())));
@@ -226,7 +226,7 @@ impl LexBase for StreamLex {
             let push_tkn_name = JsValue::from(push_tkn_name.unwrap() as u32);
             let push_tkn_data = unsafe {Uint8Array::view(&push_tkn_data_buffer)};
             let end = JsValue::from(false);
-            let _ = on_tkn_data.call3(exec_context, &push_tkn_name, &push_tkn_data, &end);
+            let _ = on_tkn_data.call3(exec_context, &push_tkn_name, &push_tkn_data, &end)?;
           }
           push_tkn_data_buffer.clear();
         }

@@ -160,6 +160,10 @@ impl Parser {
     self.lex.has_data()
   }
 
+  pub fn data(&self) -> Vec<u8> {
+    self.lex.data()
+  }
+
   pub fn set_on_tkn_data(&mut self, on_tkn_data: Option<Function>) {
     self.lex.set_on_tkn_data(on_tkn_data);
   }

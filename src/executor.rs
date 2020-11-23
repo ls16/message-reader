@@ -56,6 +56,14 @@ impl Executor {
     self.parser.init();
   }
 
+  pub fn has_data(&self) -> bool {
+    self.parser.has_data()
+  }
+
+  pub fn data(&self) -> Vec<u8> {
+    self.parser.data()
+  }
+
   pub fn parse_data(&mut self, data: &Uint8Array, proto: &Object,
     socket_key: &JsValue, socket: &JsValue,
     on_before_parse: Option<Function>, on_after_parse: Option<Function>,
@@ -82,7 +90,8 @@ impl Executor {
       };
 
       if let Some(ref on_after_parse) = on_after_parse {
-        let _ = on_after_parse.call0(&exec_context);
+        let break_parse = on_after_parse.call0(&exec_context)?;
+        if break_parse == JsValue::TRUE {break};
       }
 
       if !self.parser.has_data() {break}

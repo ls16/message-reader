@@ -97,6 +97,11 @@ pub trait LexBase {
   }
 
   #[allow(unused_variables)]
+  fn data(&self) -> Vec<u8> {
+    unimplemented!();
+  }
+
+  #[allow(unused_variables)]
   fn set_on_tkn_data(&mut self, on_tkn_data: Option<Function>) {
     unimplemented!();
   }

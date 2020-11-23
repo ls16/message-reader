@@ -129,6 +129,13 @@ impl LexBase for StreamLex {
     self.cur_position < self.buffer.len()
   }
 
+  fn data(&self) -> Vec<u8> {
+    match self.has_data() {
+      true => self.buffer[self.cur_position..].to_vec(),
+      _ => vec!()
+    }
+  }
+
   fn get_token(&mut self, exec_context: &JsValue) -> Result<Option<Token>, JsValue> {
 
     macro_rules! restore_state {

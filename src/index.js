@@ -74,6 +74,10 @@ function createConnectionListener(self, type, id, options, sock) {
       (typeof(onAfterParse) == 'function') && onAfterParse.call(this);
       // exec middlewares
       execMiddlewares(this);
+
+      const breakParse = instData.breakParse == true ? true : false;
+      instData.breakParse = false;
+      return breakParse;
     };
   });
 
@@ -85,12 +89,31 @@ function createConnectionListener(self, type, id, options, sock) {
       executor.parse_init();
     }
 
+    function parseData(data) {
+      try {
+        executor.parse_data(data, instData.execOptions[optionsIndex].proto, 'connection', connection,
+        instData.execOptions[optionsIndex].onBeforeParse,
+        instData.execOptions[optionsIndex].onAfterParse,
+        instData.execOptions[optionsIndex].proto.onTknData);
+      } catch (err) {
+        executor.parse_init();
+        execHandler(instData.handlers.errorConnection, connection, [connection, err]);
+      }
+    }
+
     function setOptions(index) {
       if (index < 0 || index >= instData.execOptions.length) return;
+      const curExecutor = executor;
       optionsIndex = index;
       executor = type == 'server'
         ? instData.execOptions[optionsIndex].master.clone_executor()
         : instData.execOptions[optionsIndex].master;
+      instData.breakParse = true;
+
+      process.nextTick(() => {
+        const data = curExecutor && curExecutor.has_data() ? curExecutor.data() : null;
+        if (data != null) parseData(data);
+      });
     }
 
     setOptions(0);
@@ -115,15 +138,7 @@ function createConnectionListener(self, type, id, options, sock) {
     }
 
     socket.on('data', (data) => {
-      try {
-        executor.parse_data(data, instData.execOptions[optionsIndex].proto, 'connection', connection,
-        instData.execOptions[optionsIndex].onBeforeParse,
-        instData.execOptions[optionsIndex].onAfterParse,
-        instData.execOptions[optionsIndex].proto.onTknData);
-      } catch (err) {
-        executor.parse_init();
-        execHandler(instData.handlers.errorConnection, connection, [connection, err]);
-      }
+      parseData(data);
     });
   
     socket.on('error', (err) => {
@@ -185,7 +200,8 @@ class Base {
         errorConnection: this.onError
       },
       state: INIT,
-      data: {}
+      data: {},
+      breakParse: false
     };
   }
 

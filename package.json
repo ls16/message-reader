@@ -4,6 +4,9 @@
   "description": "Message reader",
   "main": "src",
   "author": "Sergey Lunev",
+  "license": "MIT",
+  "homepage": "https://github.com/ls16/message-reader",
+  "repository": "https://github.com/ls16/message-reader.git",
   "scripts": {
     "test": "wasm-pack test --node",
     "build": "wasm-pack build --target nodejs"

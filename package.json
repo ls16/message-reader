@@ -1,6 +1,6 @@
 {
   "name": "message-reader",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Message reader",
   "main": "src",
   "author": "Sergey Lunev",

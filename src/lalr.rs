@@ -595,128 +595,35 @@ enum Conflict {
   ReduceReduce
 }
 
-#[derive(Debug)]
-pub struct LALRBuilder {
+fn build_goto_states<T: LRItems>(grammar: &Grammar) -> GotoStatesOpt {
+  let mut states = GotoStates::new();
+  let canonical = T::canonical(grammar);
+  let grammar_symbols = grammar.symbols();
+  for i in 0..canonical.len() {
+    let items = &canonical[i];
+    for symbol in &grammar_symbols {
+      let goto = items.goto(grammar, symbol);
+      if goto.len() > 0 {
+        for j in 0..canonical.len() {
+          if canonical[j].contains(&goto) && canonical[j].len() == goto.len() {
+            states.set_state(i, symbol.name(), j);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  GotoStatesOpt::from(&states)
 }
 
-impl LALRBuilder {
-  pub fn new() -> Self {
-    Self {
-    }
-  }
+pub trait StatesBuilder {
+  fn build_goto_states(grammar: &Grammar) -> GotoStatesOpt;
 
-  pub fn build_goto_states(grammar: &Grammar) -> GotoStatesOpt {
-    let mut states = GotoStates::new();
-    let canonical = LRItems0::canonical(grammar);
-    let grammar_symbols = grammar.symbols();
-    for i in 0..canonical.len() {
-      let items = &canonical[i];
-      for symbol in &grammar_symbols {
-        let goto = items.goto(grammar, symbol);
-        if goto.len() > 0 {
-          for j in 0..canonical.len() {
-            if canonical[j].contains(&goto) && canonical[j].len() == goto.len() {
-              states.set_state(i, symbol.name(), j);
-              break;
-            }
-          }
-        }
-      }
-    }
+  fn build_collection_items<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Vec<LRItems1>;
 
-    GotoStatesOpt::from(&states)
-  }
-
-  fn make_lr_items1(item: LRItem) -> LRItems1 {
-    let mut items = LRItems1::new();
-    items.push_item(item);
-    items
-  }
-
-  fn build_lalr<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Vec<LRItems1> {
-    let mut kernels : Vec<LRItems0> = vec![];
-    let canonical = LRItems0::canonical(grammar);
-    for index in 0..canonical.len() {
-      let items = &canonical[index];
-      let mut kernel = items.kernel();
-      if index == 0 {
-        kernel.push_item(LRItem::new(0, grammar.production_clone_rc(0), None));
-      }
-      kernels.push(kernel);
-    }
-
-    let mut lalr_kernels : Vec<LRItems1> = vec![];
-    for index in 0..kernels.len() {
-      let mut lr1 = LRItems1::new();
-      if index == 0 {
-        lr1.push_item(LRItem::new(0, grammar.production_clone_rc(0), Some(GrammarSymbol::s_term().name())));
-      }
-      lalr_kernels.push(lr1);
-    }
-
-    let l_term_name = Some(GrammarSymbol::l_term().name());
-
-    loop {
-      let mut count = 0;
-      for i in 0..kernels.len() {
-        let kernel = &kernels[i];
-        for i1 in 0..kernel.len() {
-          let kern_item = kernel.item(i1);
-          let closure = Self::make_lr_items1(
-            LRItem::new(
-              kern_item.position, kern_item.production.clone(), Some(GrammarSymbol::l_term().name())
-            )
-          ).closure(grammar);
-
-          for i2 in 0..closure.len() {
-            let mut j: Option<&usize> = None;
-            let clos_item = closure.item(i2);
-            if clos_item.position < clos_item.production.len() {
-              let symbol = clos_item.production.symbol(clos_item.position);
-              j = goto_states.state(i, symbol.name());
-            }
-            if j == None {continue};
-            let j = *j.unwrap();
-            if clos_item.term_name != l_term_name {
-              let lr_item = LRItem::new(clos_item.position + 1, clos_item.production.clone(), clos_item.term_name.clone());
-              let lr_items = Self::make_lr_items1(lr_item.clone());
-              if lalr_kernels.get(j).is_some() {
-                if !lalr_kernels[j].contains(&lr_items) {
-                  lalr_kernels[j].push_item(lr_item);
-                  count += 1;
-                }
-              }
-            } else {
-              for i3 in 0..lalr_kernels[i].len() {
-                let item = lalr_kernels[i].item(i3);
-                if item.production == kern_item.production {
-                  if lalr_kernels.get(j).is_some() {
-                    let lr_item = LRItem::new(clos_item.position + 1, clos_item.production.clone(), item.term_name.clone());
-                    let lr_items = Self::make_lr_items1(lr_item.clone());
-                    if !lalr_kernels[j].contains(&lr_items) {
-                      lalr_kernels[j].push_item(lr_item);
-                      count += 1;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      if count == 0 {break};
-    }
-
-    let mut result : Vec<LRItems1> = Vec::new();
-    for i in 0..lalr_kernels.len() {
-      let items = &lalr_kernels[i];
-      result.push(items.closure(grammar));
-    }
-    result
-  }
-
-  pub fn build_action_states<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Result<ActionStatesOpt, String> {
-    let lalr = LALRBuilder::build_lalr(grammar, goto_states);
+  fn build_action_states<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Result<ActionStatesOpt, String> {
+    let lalr = Self::build_collection_items(grammar, goto_states);
     let mut action_states = ActionStates::new();
     let mut conflicts: Vec<(Conflict, Option<Rc<GrammarProduction>>, Rc<GrammarProduction>, usize)> = Vec::new();
 
@@ -815,5 +722,129 @@ impl LALRBuilder {
     };
 
     Ok(ActionStatesOpt::from(&action_states))
+  }
+}
+
+pub struct LALRBuilder {
+}
+
+impl LALRBuilder {
+  pub fn new() -> Self {
+    Self {
+    }
+  }
+
+  fn make_lr_items1(item: LRItem) -> LRItems1 {
+    let mut items = LRItems1::new();
+    items.push_item(item);
+    items
+  }
+}
+
+impl StatesBuilder for LALRBuilder {
+  fn build_goto_states(grammar: &Grammar) -> GotoStatesOpt {
+    build_goto_states::<LRItems0>(grammar)
+  }
+
+  fn build_collection_items<'a>(grammar: &'a Grammar, goto_states: &'a GotoStatesOpt) -> Vec<LRItems1> {
+    let mut kernels : Vec<LRItems0> = vec![];
+    let canonical = LRItems0::canonical(grammar);
+    for index in 0..canonical.len() {
+      let items = &canonical[index];
+      let mut kernel = items.kernel();
+      if index == 0 {
+        kernel.push_item(LRItem::new(0, grammar.production_clone_rc(0), None));
+      }
+      kernels.push(kernel);
+    }
+
+    let mut lalr_kernels : Vec<LRItems1> = vec![];
+    for index in 0..kernels.len() {
+      let mut lr1 = LRItems1::new();
+      if index == 0 {
+        lr1.push_item(LRItem::new(0, grammar.production_clone_rc(0), Some(GrammarSymbol::s_term().name())));
+      }
+      lalr_kernels.push(lr1);
+    }
+
+    let l_term_name = Some(GrammarSymbol::l_term().name());
+
+    loop {
+      let mut count = 0;
+      for i in 0..kernels.len() {
+        let kernel = &kernels[i];
+        for i1 in 0..kernel.len() {
+          let kern_item = kernel.item(i1);
+          let closure = Self::make_lr_items1(
+            LRItem::new(
+              kern_item.position, kern_item.production.clone(), Some(GrammarSymbol::l_term().name())
+            )
+          ).closure(grammar);
+
+          for i2 in 0..closure.len() {
+            let mut j: Option<&usize> = None;
+            let clos_item = closure.item(i2);
+            if clos_item.position < clos_item.production.len() {
+              let symbol = clos_item.production.symbol(clos_item.position);
+              j = goto_states.state(i, symbol.name());
+            }
+            if j == None {continue};
+            let j = *j.unwrap();
+            if clos_item.term_name != l_term_name {
+              let lr_item = LRItem::new(clos_item.position + 1, clos_item.production.clone(), clos_item.term_name.clone());
+              let lr_items = Self::make_lr_items1(lr_item.clone());
+              if lalr_kernels.get(j).is_some() {
+                if !lalr_kernels[j].contains(&lr_items) {
+                  lalr_kernels[j].push_item(lr_item);
+                  count += 1;
+                }
+              }
+            } else {
+              for i3 in 0..lalr_kernels[i].len() {
+                let item = lalr_kernels[i].item(i3);
+                if item.production == kern_item.production {
+                  if lalr_kernels.get(j).is_some() {
+                    let lr_item = LRItem::new(clos_item.position + 1, clos_item.production.clone(), item.term_name.clone());
+                    let lr_items = Self::make_lr_items1(lr_item.clone());
+                    if !lalr_kernels[j].contains(&lr_items) {
+                      lalr_kernels[j].push_item(lr_item);
+                      count += 1;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      if count == 0 {break};
+    }
+
+    let mut result : Vec<LRItems1> = Vec::new();
+    for i in 0..lalr_kernels.len() {
+      let items = &lalr_kernels[i];
+      result.push(items.closure(grammar));
+    }
+    result
+  }
+}
+
+pub struct LRBuilder {
+}
+
+impl LRBuilder {
+  pub fn new() -> Self {
+    Self {
+    }
+  }
+}
+
+impl StatesBuilder for LRBuilder {
+  fn build_goto_states(grammar: &Grammar) -> GotoStatesOpt {
+    build_goto_states::<LRItems1>(grammar)
+  }
+
+  fn build_collection_items<'a>(grammar: &'a Grammar, _goto_states: &'a GotoStatesOpt) -> Vec<LRItems1> {
+    LRItems1::canonical(grammar)
   }
 }

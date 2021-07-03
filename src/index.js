@@ -1,7 +1,7 @@
 const assert = require('assert');
 const Net = require('net');
 const Tls = require('tls');
-const {Executor, hash} = require('../pkg/server');
+const {Executor, hash, ParserType} = require('../pkg/server');
 
 const INIT = 0;
 const LISTENING_START = 1;
@@ -409,6 +409,7 @@ class Client extends Base {
  * @typedef {Object} BuilderOptions
  * @property {String} regexp - regular expression text
  * @property {String} grammar - grammar text
+ * @property {ParserType} [parserType] - parser type (LALR1 or LR1, default LALR1)
  * @property {Object} [proto] - prototype for message context
  */
 
@@ -427,7 +428,20 @@ function build(options, type = 'server') {
     const grammar = opt.grammar;
     assert(grammar, '"grammar" option must be set');
     const proto = opt.proto;
-    const executor = Executor.build(regexp, grammar);
+    let parserType;
+    switch (opt.parserType) {
+      case ParserType.LALR1:
+      case ParserType.LR1:
+        parserType = opt.parserType;
+        break;
+      case undefined:
+      case null:
+          parserType = ParserType.LALR1;
+        break;
+      default:
+        throw new Error(`"parserType" option ${opt.parserType} is invalid`);
+      }
+    const executor = Executor.build(regexp, grammar, parserType);
     execOptions.push({
       executor,
       proto
@@ -448,5 +462,6 @@ function build(options, type = 'server') {
 
 module.exports = {
   build,
-  hash
+  hash,
+  ParserType
 }

@@ -10,12 +10,24 @@ mod fixtures;
 fn test_lalr1() {
   let lex = Lex::new("".to_string());
   let mut parser = Parser::new(Box::new(lex));
-  let result = parser.set_grammar(fixtures::not_lalr1_grammar1());
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar1(), ParserType::LALR1);
   assert_eq!(result.is_err(), true, "Invalid build of parser");
-  let result = parser.set_grammar(fixtures::not_lalr1_grammar2());
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar2(), ParserType::LALR1);
   assert_eq!(result.is_err(), true, "Invalid build of parser");
-  let result = parser.set_grammar(fixtures::not_lalr1_grammar3());
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar3(), ParserType::LALR1);
   assert_eq!(result.is_err(), true, "Invalid build of parser");
+}
+
+#[wasm_bindgen_test]
+fn test_lr1() {
+  let lex = Lex::new("".to_string());
+  let mut parser = Parser::new(Box::new(lex));
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar1(), ParserType::LR1);
+  assert_eq!(result.is_err(), true, "Invalid build of parser");
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar2(), ParserType::LR1);
+  assert_eq!(result.is_err(), true, "Invalid build of parser");
+  let result = parser.set_grammar(fixtures::not_lalr1_grammar3(), ParserType::LR1);
+  assert_eq!(result.is_ok(), true, "Invalid build of parser");
 }
 
 #[wasm_bindgen_test]
@@ -27,7 +39,7 @@ fn test_parse() {
   lex.set_regular_definition_text(fixtures::reg_exp());
 
   let mut parser = Parser::new(Box::new(lex));
-  let _ = parser.set_grammar(fixtures::grammar());
+  let _ = parser.set_grammar(fixtures::grammar(), ParserType::LALR1);
   parser.disable_state_logging();
 
   let res = parser.parse(&js_ctx);

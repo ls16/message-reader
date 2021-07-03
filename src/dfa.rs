@@ -199,7 +199,7 @@ impl DFABuilder {
     dfa_lex.set_regular_definition_text(reg_exp().to_string());
     let mut dfa_parser = Parser::new(dfa_lex);
     dfa_parser.disable_state_logging();
-    let _ = dfa_parser.set_grammar(grammar().to_string());
+    let _ = dfa_parser.set_grammar(grammar().to_string(), ParserType::LALR1);
 
     let mut lex = Lex::new("".to_string());
     lex.set_regular_definition_text(re_def);

@@ -2,8 +2,8 @@ use std::rc::Rc;
 use js_sys::{Object, Reflect, Function, Uint8Array};
 use wasm_bindgen::prelude::{JsValue, wasm_bindgen};
 
-use super::lalr::{GrammarBuilder, LALRBuilder};
-use super::parser::{Parser, ParseResult};
+use super::lalr::{GrammarBuilder, StatesBuilder, LALRBuilder, LRBuilder};
+use super::parser::{Parser, ParseResult, ParserType};
 use super::dfa::build;
 use super::stream_lex::StreamLex;
 
@@ -28,7 +28,7 @@ impl Executor {
     self.clone()
   }
 
-  pub fn build(reg_exp: String, grammar: String) -> Self {
+  pub fn build(reg_exp: String, grammar: String, parser_type: ParserType) -> Self {
     let (lex_states, lex_goto_states) = build(reg_exp);
     let lex_states = Some(Rc::new(lex_states));
     let lex_goto_states = Some(Rc::new(lex_goto_states));
@@ -37,8 +37,18 @@ impl Executor {
     lex.set_states(lex_states, lex_goto_states);
 
     let grammar = GrammarBuilder::from_text(grammar).unwrap();
-    let goto_states = LALRBuilder::build_goto_states(&grammar);
-    let action_states = LALRBuilder::build_action_states(&grammar, &goto_states).unwrap();
+    let goto_states;
+    let action_states;
+    match parser_type {
+      ParserType::LALR1 => {
+        goto_states = LALRBuilder::build_goto_states(&grammar);
+        action_states = LALRBuilder::build_action_states(&grammar, &goto_states).unwrap();
+      },
+      ParserType::LR1 => {
+        goto_states = LRBuilder::build_goto_states(&grammar);
+        action_states = LRBuilder::build_action_states(&grammar, &goto_states).unwrap();
+      }
+    }
     let parser_grammar = Rc::new(grammar);
     let parser_goto_states = Rc::new(goto_states);
     let parser_action_states = Rc::new(action_states);

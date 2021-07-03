@@ -7,6 +7,12 @@ use super::utils::*;
 use super::lex::*;
 use super::lalr::*;
 
+#[wasm_bindgen]
+pub enum ParserType {
+  LR1,
+  LALR1
+}
+
 #[derive(PartialEq, Debug)]
 pub enum ParseResult {
   ParseWait,
@@ -131,10 +137,20 @@ impl Parser {
     self.state_logging = false;
   }
 
-  pub fn set_grammar(&mut self, grammar: String) -> Result<(), String> {
+  pub fn set_grammar(&mut self, grammar: String, parser_type: ParserType) -> Result<(), String> {
     let grammar = GrammarBuilder::from_text(grammar).unwrap();
-    let goto_states = LALRBuilder::build_goto_states(&grammar);
-    let action_states = LALRBuilder::build_action_states(&grammar, &goto_states)?;
+    let goto_states;
+    let action_states;
+    match parser_type {
+      ParserType::LALR1 => {
+        goto_states = LALRBuilder::build_goto_states(&grammar);
+        action_states = LALRBuilder::build_action_states(&grammar, &goto_states)?;
+      },
+      ParserType::LR1 => {
+        goto_states = LRBuilder::build_goto_states(&grammar);
+        action_states = LRBuilder::build_action_states(&grammar, &goto_states)?;
+      }
+    }
 
     self.grammar = Rc::new(grammar);
     self.goto_states = Rc::new(goto_states);

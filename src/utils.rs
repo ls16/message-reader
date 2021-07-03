@@ -874,18 +874,35 @@ pub trait LRItems : Sized {
     let mut result = Self::new();
     for i in 0..self.len() {
       let item = self.item(i);
-      let positions = item.production.find(symbol.name());
-      for j in 0..positions.len() {
-        if positions[j] == item.position {
+      let sym1 = item.production.symbols.get(item.position);
+      if let Some(sym1) = sym1 {
+        if sym1.name == symbol.name {
           result.push_item(LRItem::new(
-           positions[j] + 1,
-           item.production.clone(),
-           item.term_name
-          ));
+            item.position + 1,
+            item.production.clone(),
+            item.term_name
+           ));
         }
       }
     }
+    if result.len() == 0 {return result};
+
     result.closure(grammar)
+  }
+
+  fn has_symbol_in_pos(&self, symbol: &GrammarSymbol) -> bool {
+    let mut result = false;
+    for i in 0..self.len() {
+      let item = self.item(i);
+      let sym1 = item.production.symbols.get(item.position);
+      if let Some(sym1) = sym1 {
+        if sym1.name == symbol.name {
+          result = true;
+          break;
+        }
+      }
+    }
+    return result;
   }
 
   fn canonical(grammar: &Grammar) -> Vec<Self> {
@@ -898,12 +915,15 @@ pub trait LRItems : Sized {
         Some(GrammarSymbol::s_term().name()))
     );
     result.push(items.closure(&grammar));
+    let mut visited: HashSet<usize> = HashSet::new();
 
     loop {
       let mut result1: Vec<Self> = Vec::new();
       for i in 0..result.len() {
         let items = &result[i];
+        if visited.contains(&i) {continue};
         for symbol in &symbols {
+          if !items.has_symbol_in_pos(&symbol) {continue};
           let goto_items = items.goto(grammar, symbol);
           if goto_items.len() > 0 && result.iter().find(|items| {
               (items.len() == goto_items.len()) && items.contains(&goto_items)
@@ -911,6 +931,7 @@ pub trait LRItems : Sized {
             result1.push(goto_items);
           }
         }
+        visited.insert(i);
       }
       if result1.len() == 0 {break};
       result.extend(result1);

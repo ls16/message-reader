@@ -263,7 +263,7 @@ impl Lex {
         _ => &item[result.start()..result.end()]
       };
       let name = hash(&(name.to_string()));
-      if rules.contains_key(&name) {panic!(format!("Rule '{}' already defined", name))};
+      if rules.contains_key(&name) {panic!("Rule '{}' already defined", name)};
       let mut index = result.end() + 1;
       let result = rg_expression.find(&item[index..]);
       let result = result.expect(format!("Expression for '{}' is not defined", name).as_str());
